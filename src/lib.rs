@@ -53,7 +53,9 @@ mod tests {
             if let Some(src) = e.source() {
                 units.insert(src);
             }
-            units.insert(e.target());
+            if let Some(tar) = e.target() {
+                units.insert(tar);
+            }
         }
 
         for u in units {

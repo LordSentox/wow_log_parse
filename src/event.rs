@@ -39,7 +39,7 @@ pub struct Event {
     time: NaiveDateTime,
     typ: EventType,
     source: Option<Unit>,
-    target: Unit
+    target: Option<Unit>
 }
 
 #[derive(Clone, Debug)]
@@ -47,7 +47,6 @@ pub enum ParseErrorType {
     WrongHeadLength,
     WrongTimeFormat,
     InvalidArg,
-    NoTarget,
     UnknownEventType(String)
 }
 
@@ -141,10 +140,7 @@ impl Event {
         let source = Unit::from_raw(parts[1], parts[2]);
 
         // Read the target this event is affecting. None is not an option here.
-        let target = match Unit::from_raw(parts[4], parts[5]) {
-            Some(t) => t,
-            None => return Err(ParseError::new(ParseErrorType::NoTarget, 0))
-        };
+        let target = Unit::from_raw(parts[4], parts[5]);
 
         // Create the event from the parsed data
         Ok(Event {
@@ -161,5 +157,5 @@ impl Event {
 
     pub fn source(&self) -> Option<Unit> { self.source.clone() }
 
-    pub fn target(&self) -> Unit { self.target.clone() }
+    pub fn target(&self) -> Option<Unit> { self.target.clone() }
 }
