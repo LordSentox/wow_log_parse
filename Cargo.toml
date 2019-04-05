@@ -1,0 +1,10 @@
+[package]
+name = "wow_log_parse"
+version = "0.1.0"
+authors = ["Arne Dussin <arne.dussin@live.de>"]
+edition = "2018"
+
+[dependencies]
+chrono = "*"
+log = "*"
+env_logger = "*"
