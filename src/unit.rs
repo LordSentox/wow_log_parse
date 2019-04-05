@@ -20,10 +20,18 @@ impl Unit {
             None
         }
         else {
-            Some(Unit {
-                id: u64::from_str_radix(id.as_ref().split_at(2).1, 16).expect("Invalid id string (XXX: Should not panic)"),
-                name: name.as_ref().trim_matches('\"').to_string()
-            })
+            let id = match u64::from_str_radix(id.as_ref().split_at(2).1, 16) {
+                Ok(id) => id,
+                Err(err) => { 
+                    error!("Error parsing id {}", err);
+                    return None;
+                }
+            };
+            if id == 0 || name.as_ref() == "nil" { return None; }
+
+            let name = name.as_ref().trim_matches('\"').to_string();
+
+            Some(Unit { id, name })
         }
     }
 
