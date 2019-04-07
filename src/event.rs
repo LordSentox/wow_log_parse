@@ -91,6 +91,26 @@ impl EventType {
             other => Err(ParseError::new(ParseErrorType::UnknownEventType(other.to_string()), col))
         }
     }
+
+    /// Returns true, if the event is hostile, like a damaging event or a curse
+    /// event. Environmental damage does not count, since the environment has no
+    /// will.
+    pub fn is_hostile(&self) -> bool {
+        match self {
+
+        }
+        EventType::DamageShield ||
+        EventType::DamageShieldMissed ||
+        EventType::RangeDamage ||
+        EventType::SpellDamage ||
+        EventType::SpellInterrupt ||
+        EventType::SpellMissed ||
+        EventType::SpellPeriodicDamage ||
+        EventType::SpellPeriodicMissed ||
+        EventType::SpellStolen ||
+        EventType::SwingDamage ||
+        EventType::SwingMissed
+    }
 }
 
 impl ParseError {
