@@ -5,6 +5,7 @@ pub struct Unit {
 }
 
 impl Unit {
+    /// Create a new Unit
     pub fn new(id: u64, name: String) -> Unit {
         Unit {
             id,
@@ -15,6 +16,7 @@ impl Unit {
     /// Convert the raw Strings as found in a log file to a Unit, or None, in
     /// case they do not point to one
     pub fn from_raw<S: AsRef<str>>(id: S, name: S) -> Option<Unit> {
+        // Check for non-hex-coded ids
         if !id.as_ref().starts_with("0x") {
             warn!("Invalid Unit id detected: {}", id.as_ref());
             None
@@ -33,6 +35,15 @@ impl Unit {
 
             Some(Unit { id, name })
         }
+    }
+
+    /// Check, if this Unit represents a Player, or something else. Returns true
+    /// if it is a Player
+    pub fn is_player(&self) -> bool {
+        // TODO: Still don't know if this is correct. It seems, that Players are
+        // at least on the lower id spectrum, while other entities are at the
+        // higher spectrum
+        self.id <= u32::max_value()
     }
 
     pub fn name(&self) -> &String { &self.name }
