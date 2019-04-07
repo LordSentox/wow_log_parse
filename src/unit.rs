@@ -43,7 +43,7 @@ impl Unit {
         // TODO: Still don't know if this is correct. It seems, that Players are
         // at least on the lower id spectrum, while other entities are at the
         // higher spectrum
-        self.id <= u32::max_value()
+        self.id <= u32::max_value() as u64
     }
 
     pub fn name(&self) -> &String { &self.name }

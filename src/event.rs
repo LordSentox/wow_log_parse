@@ -97,19 +97,19 @@ impl EventType {
     /// will.
     pub fn is_hostile(&self) -> bool {
         match self {
-
+            EventType::DamageShield |
+            EventType::DamageShieldMissed |
+            EventType::RangeDamage |
+            EventType::SpellDamage |
+            EventType::SpellInterrupt |
+            EventType::SpellMissed |
+            EventType::SpellPeriodicDamage |
+            EventType::SpellPeriodicMissed |
+            EventType::SpellStolen |
+            EventType::SwingDamage |
+            EventType::SwingMissed => true,
+            _ => false
         }
-        EventType::DamageShield ||
-        EventType::DamageShieldMissed ||
-        EventType::RangeDamage ||
-        EventType::SpellDamage ||
-        EventType::SpellInterrupt ||
-        EventType::SpellMissed ||
-        EventType::SpellPeriodicDamage ||
-        EventType::SpellPeriodicMissed ||
-        EventType::SpellStolen ||
-        EventType::SwingDamage ||
-        EventType::SwingMissed
     }
 }
 
