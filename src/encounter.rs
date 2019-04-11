@@ -1,12 +1,12 @@
-use crate::event::Event;
+use crate::event::*;
 use crate::unit::Unit;
 
 use std::collections::HashSet;
 
 /// Represents an Encounter.
 /// An Encounter starts, when no other Encounter is active and an Event with an
-/// enemy is detected. It ends when all enemies pulled during the encounter are
-/// dead.
+/// enemy is detected. It ends when all enemies pulled in the encounter or all
+/// players present are dead.
 pub struct Encounter {
     events: Vec<Event>,
     involved: HashSet<Unit>
@@ -31,23 +31,54 @@ impl Encounter {
 
         // Once an encounter starts, when one of these Vectors is empty, the
         // encounter stops
-        let mut friendlies = HashSet::new();
-        let mut hostiles = HashSet::new();
+        let mut alive_friendlies = HashSet::new();
+        let mut alive_hostiles = HashSet::new();
+        let mut involved = HashSet::new();
         let mut started = false;
 
         while let Some(event) = all_events.next() {
-            if started { enc_events.push(event); }
+            if started { enc_events.push(event.clone()); }
 
-            let typ = event.typ();
-            if typ.is_hostile() {
-                // No two friendly units may be involved in a hostile event
-                if let (Some(src), Some(tgt)) = (event.source(), event.target()) {
-                    assert!(src.is_player() != tgt.is_player());
+            // Add new entities to the encounter or start the encounter.
+            if event.is_hostile() {
+                if let Some(src) = event.source() {
+                    involved.insert(src.clone());
+                    if src.hostile() { alive_hostiles.insert(src); }
+                    else { alive_friendlies.insert(src); }
                 }
-                if event.source().is_none() || event.target().is_none() { continue; }
+                if let Some(tgt) = event.target() {
+                    involved.insert(tgt.clone());
+                    if tgt.hostile() { alive_hostiles.insert(tgt); }
+                    else { alive_friendlies.insert(tgt); }
+                }
+
+                started = true;
+            }
+            // Remove dead entities from the encounter and end the encounter if
+            // either all friendlies or all enemies are dead.
+            if event.typ() == EventType::UnitDied {
+                alive_hostiles.remove(&event.target().unwrap());
+                alive_friendlies.remove(&event.target().unwrap());
+            }
+
+            if started {
+                // Check if there are no friendlies or no hostiles left
+                if alive_friendlies.is_empty() || alive_hostiles.is_empty() {
+                    break; // The encounter is over
+                }
+
+                info!("Alive hostiles: {:?}", alive_hostiles);
             }
         }
 
-        if !started { None }
+        if started {
+            Some(Encounter {
+                events: enc_events,
+                involved
+            })
+        }
+        else { None }
     }
+
+    pub fn involved(&self) -> &HashSet<Unit> { &self.involved }
 }

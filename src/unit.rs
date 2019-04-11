@@ -46,6 +46,11 @@ impl Unit {
         self.id <= u32::max_value() as u64
     }
 
+    /// Check if the Unit is hostile to the logger or not.
+    pub fn hostile(&self) -> bool {
+        !self.is_player()
+    }
+
     pub fn name(&self) -> &String { &self.name }
 
     pub fn id(&self) -> u64 { self.id }

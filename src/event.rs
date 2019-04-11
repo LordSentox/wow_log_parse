@@ -1,7 +1,7 @@
 use chrono::NaiveDateTime;
 use crate::unit::Unit;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EventType {
     DamageShield,
     DamageShieldMissed,
@@ -174,6 +174,20 @@ impl Event {
     pub fn time(&self) -> NaiveDateTime { self.time }
 
     pub fn typ(&self) -> EventType { self.typ }
+
+    pub fn is_hostile(&self) -> bool {
+        if !self.typ.is_hostile() { return false; }
+
+        // No two units of the same team may be involved in a hostile event
+        // XXX: Assumes, Players are friendly and npcs are hostile.
+        if let (Some(src), Some(tgt)) = (&self.source, &self.target) {
+            if src.hostile() == tgt.hostile() {
+                warn!("Detected hostile event on same side: {:?}", &self);
+            }
+        }
+
+        true
+    }
 
     pub fn source(&self) -> Option<Unit> { self.source.clone() }
 
