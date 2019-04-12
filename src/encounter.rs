@@ -31,7 +31,7 @@ impl Encounter {
 
         // Once an encounter starts, when one of these Vectors is empty, the
         // encounter stops
-        let mut alive_friendlies = HashSet::new();
+        let mut alive_players = HashSet::new();
         let mut alive_hostiles = HashSet::new();
         let mut involved = HashSet::new();
         let mut started = false;
@@ -40,34 +40,49 @@ impl Encounter {
             if started { enc_events.push(event.clone()); }
 
             // Add new entities to the encounter or start the encounter.
+            // hostile is everything that is attacked by or has attacked a
+            // player.
             if event.is_hostile() {
-                if let Some(src) = event.source() {
-                    involved.insert(src.clone());
-                    if src.hostile() { alive_hostiles.insert(src); }
-                    else { alive_friendlies.insert(src); }
-                }
-                if let Some(tgt) = event.target() {
-                    involved.insert(tgt.clone());
-                    if tgt.hostile() { alive_hostiles.insert(tgt); }
-                    else { alive_friendlies.insert(tgt); }
-                }
+                // Closure adds to the HashSets, when the first target is a
+                // Player.
+                // TODO: This can probably be done more efficiently.
+                let mut add_if_player_first = |u1: Option<Unit>, u2: Option<Unit>| {
+                    if let Some(u1) = u1 {
+                        if u1.is_player() {
+                            alive_players.insert(u1.clone());
+                            involved.insert(u1);
 
-                started = true;
+                            if let Some(u2) = u2 {
+                                if u2.hostile() {
+                                    alive_hostiles.insert(u2.clone());
+                                    involved.insert(u2);
+                                }
+                            }
+
+                            true
+                        }
+                        else { false }
+                    }
+                    else { false }
+                };
+
+                // Add the units if necessary and start the encounter if it
+                // didn't already.
+                started |= add_if_player_first(event.source(), event.target());
+                started |= add_if_player_first(event.target(), event.source());
             }
             // Remove dead entities from the encounter and end the encounter if
             // either all friendlies or all enemies are dead.
             if event.typ() == EventType::UnitDied {
                 alive_hostiles.remove(&event.target().unwrap());
-                alive_friendlies.remove(&event.target().unwrap());
+                alive_players.remove(&event.target().unwrap());
             }
 
             if started {
                 // Check if there are no friendlies or no hostiles left
-                if alive_friendlies.is_empty() || alive_hostiles.is_empty() {
+                if alive_players.is_empty() || alive_hostiles.is_empty() {
                     break; // The encounter is over
                 }
-
-                info!("Alive hostiles: {:?}", alive_hostiles);
             }
         }
 

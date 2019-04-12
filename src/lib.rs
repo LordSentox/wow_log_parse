@@ -78,6 +78,9 @@ mod tests {
 
         for e in encounters {
             info!("{} units involved in an encounter.", e.involved().len());
+            for u in e.involved() {
+                info!("[{:x}, \"{}\"]", u.id(), u.name());
+            }
         }
     }
 }
