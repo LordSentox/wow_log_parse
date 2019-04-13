@@ -76,11 +76,13 @@ mod tests {
         let encounters = Encounter::all_encounters(events);
         info!("Number of encounters: {}", encounters.len());
 
-        for e in encounters {
+        for e in &encounters {
             info!("{} units involved in an encounter.", e.involved().len());
             for u in e.involved() {
                 info!("[{:x}, \"{}\"]", u.id(), u.name());
             }
         }
+
+        assert_eq!(encounters.len(), 28);
     }
 }
