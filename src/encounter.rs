@@ -1,7 +1,8 @@
 use crate::event::*;
 use crate::unit::Unit;
 
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
+use std::cmp::{max, min};
 
 /// Represents an Encounter.
 /// An Encounter starts, when no other Encounter is active and an Event with an
@@ -14,85 +15,82 @@ pub struct Encounter {
 
 impl Encounter {
     /// Split a given vector into all encounters contained within.
-    pub fn all_encounters(events: &mut Iterator<Item=Event>) -> Vec<Encounter> {
-        let mut encounters = Vec::new();
+    pub fn all_encounters(events: Vec<Event>) -> Vec<Encounter> {
+        // Records the lives of all hostile units as a tuple of the Unit itself,
+        // the index of the first event it attacked by or has attacked a player
+        // and the index of the last event recorded with it.
+        let mut life_windows: HashMap<Unit, (usize, usize)> = HashMap::new();
 
-        while let Some(e) = Encounter::next_encounter(events) {
-            encounters.push(e);
-        }
-
-        encounters
-    }
-
-    /// Continue reading from the iterator, until the next Encounter has been
-    /// read and return it, or None if no Encounter was detected.
-    pub fn next_encounter(all_events: &mut Iterator<Item=Event>) -> Option<Encounter> {
-        let mut enc_events = Vec::new();
-
-        // Once an encounter starts, when one of these Vectors is empty, the
-        // encounter stops
-        let mut alive_players = HashSet::new();
-        let mut alive_hostiles = HashSet::new();
-        let mut involved = HashSet::new();
-        let mut started = false;
-
-        while let Some(event) = all_events.next() {
-            if started { enc_events.push(event.clone()); }
-
-            // Add new entities to the encounter or start the encounter.
-            // hostile is everything that is attacked by or has attacked a
-            // player.
-            if event.is_hostile() {
-                // Closure adds to the HashSets, when the first target is a
-                // Player.
-                // TODO: This can probably be done more efficiently.
-                let mut add_if_player_first = |u1: Option<Unit>, u2: Option<Unit>| {
-                    if let Some(u1) = u1 {
-                        if u1.is_player() {
-                            alive_players.insert(u1.clone());
-                            involved.insert(u1);
-
-                            if let Some(u2) = u2 {
-                                if u2.hostile() {
-                                    alive_hostiles.insert(u2.clone());
-                                    involved.insert(u2);
-                                }
-                            }
-
-                            true
-                        }
-                        else { false }
+        // First, run through the Events in positive direction and find all Units
+        // starting lifetimes.
+        for (i, e) in events.iter().enumerate() {
+            if e.is_hostile() {
+                if let (Some(src), Some(tgt)) = (e.source(), e.target()) {
+                    if src.is_player() && !tgt.is_player() && !life_windows.contains_key(&tgt) {
+                        life_windows.insert(tgt, (i, 0));
                     }
-                    else { false }
-                };
-
-                // Add the units if necessary and start the encounter if it
-                // didn't already.
-                started |= add_if_player_first(event.source(), event.target());
-                started |= add_if_player_first(event.target(), event.source());
-            }
-            // Remove dead entities from the encounter and end the encounter if
-            // either all friendlies or all enemies are dead.
-            if event.typ() == EventType::UnitDied {
-                alive_hostiles.remove(&event.target().unwrap());
-                alive_players.remove(&event.target().unwrap());
-            }
-
-            if started {
-                // Check if there are no friendlies or no hostiles left
-                if alive_players.is_empty() || alive_hostiles.is_empty() {
-                    break; // The encounter is over
+                    else if tgt.is_player() && !src.is_player() && !life_windows.contains_key(&src) {
+                        life_windows.insert(src, (i, 0));
+                    }
                 }
             }
         }
 
-        if started {
-            Some(Encounter {
-                events: enc_events,
-                involved
-            })
+        // Run through the Vec backwards and find the last events that each unit
+        // has taken part in. This is considered the end of their life, even when
+        // there has not been a UnitDied Event.
+        for (i, e) in events.iter().enumerate().rev() {
+            if let Some(src) = e.source() {
+                if let Some(life) = life_windows.get_mut(&src) {
+                    life.1 = max(i, life.1);
+                }
+            }
+            if let Some(tgt) = e.target() {
+                if let Some(life) = life_windows.get_mut(&tgt) {
+                    life.1 = max(i, life.1);
+                }
+            }
         }
-        else { None }
+
+        // Find the encounters by going through the list and connecting up
+        // entity lifetimes that overlap with each other.
+        let mut life_windows: Vec<&(usize, usize)> = life_windows.values().collect();
+        life_windows.sort();
+        let mut current_encounter: (usize, usize) = *life_windows[0]; // TODO: Catch index out of bounds
+        let mut encounter_indexes: Vec<(usize, usize)> = Vec::new();
+        for (life_start, life_end) in life_windows.iter().skip(1) {
+            // The next lifetime starts when the encounter is still running, so
+            // check if the encounter may be running longer.
+            if life_start <= &current_encounter.1 {
+                current_encounter.1 = max(*life_end, current_encounter.1);
+            }
+            // The next lifetime starts after the encounter has ended, create a
+            // new encounter.
+            else {
+                encounter_indexes.push(current_encounter);
+                current_encounter = (*life_start, *life_end);
+            }
+        }
+
+        // Push the last encounter
+        encounter_indexes.push(current_encounter);
+
+        encounter_indexes.iter().map(|(start, end)| {
+            Encounter::from_events(events[*start..*end+1].to_vec())
+        }).collect()
+    }
+
+    pub fn from_events(events: Vec<Event>) -> Encounter {
+        let mut involved = HashSet::new();
+        for e in &events {
+            if let Some(src) = e.source() { involved.insert(src); };
+            if let Some(tgt) = e.target() { involved.insert(tgt); };
+        }
+
+        Encounter {
+            events,
+            involved
+        }
     }
 
     pub fn involved(&self) -> &HashSet<Unit> { &self.involved }

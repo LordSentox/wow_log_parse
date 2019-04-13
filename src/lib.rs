@@ -73,7 +73,7 @@ mod tests {
 
         let events = parse(&log);
 
-        let encounters = Encounter::all_encounters(&mut events.into_iter());
+        let encounters = Encounter::all_encounters(events);
         info!("Number of encounters: {}", encounters.len());
 
         for e in encounters {
