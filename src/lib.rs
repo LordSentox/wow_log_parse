@@ -41,7 +41,7 @@ mod tests {
     fn load_file() {
         env_init();
 
-        let mut file = File::open("utgarde_keep.txt").expect("Unable to open file");
+        let mut file = File::open("logs/utgarde_keep.txt").expect("Unable to open file");
         let mut log = String::new();
         file.read_to_string(&mut log).expect("Unable to read file");
 
@@ -67,7 +67,7 @@ mod tests {
     fn load_file_encounters() {
         env_init();
 
-        let mut file = File::open("halls_of_lightning.txt").expect("Unable to open file");
+        let mut file = File::open("logs/halls_of_lightning.txt").expect("Unable to open file");
         let mut log = String::new();
         file.read_to_string(&mut log).expect("Unable to read file");
 
