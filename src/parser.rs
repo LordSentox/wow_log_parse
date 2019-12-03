@@ -1,5 +1,5 @@
-use std::mem;
 use crate::Event;
+use std::mem;
 
 /// Parse a warcraft logs string or file into an event object.
 pub fn parse<S: AsRef<str>>(log: S) -> Vec<Event> {
@@ -9,10 +9,19 @@ pub fn parse<S: AsRef<str>>(log: S) -> Vec<Event> {
         // made accessible via the API.
         match Event::from_str(l) {
             Ok(event) => result.push(event),
-            Err(err) => error!("Error parsing, line {}, column {}: {:?}", e + 1, err.col(), err.typ())
+            Err(err) => error!(
+                "Error parsing, line {}, column {}: {:?}",
+                e + 1,
+                err.col(),
+                err.typ()
+            )
         }
     }
 
-    info!("Loaded {} events successfully into memory ({} KBytes)", result.len(), mem::size_of::<Event>() * result.len() / 1024);
+    info!(
+        "Loaded {} events successfully into memory ({} KBytes)",
+        result.len(),
+        mem::size_of::<Event>() * result.len() / 1024
+    );
     result
 }

@@ -1,5 +1,5 @@
-use chrono::NaiveDateTime;
 use crate::unit::Unit;
+use chrono::NaiveDateTime;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EventType {
@@ -38,8 +38,8 @@ pub enum EventType {
 
 #[derive(Clone, Debug)]
 pub struct Event {
-    time: NaiveDateTime,
-    typ: EventType,
+    time:   NaiveDateTime,
+    typ:    EventType,
     source: Option<Unit>,
     target: Option<Unit>
 }
@@ -92,7 +92,10 @@ impl EventType {
             "SWING_DAMAGE" => Ok(EventType::SwingDamage),
             "SWING_MISSED" => Ok(EventType::SwingMissed),
             "UNIT_DIED" => Ok(EventType::UnitDied),
-            other => Err(ParseError::new(ParseErrorType::UnknownEventType(other.to_string()), col))
+            other => Err(ParseError::new(
+                ParseErrorType::UnknownEventType(other.to_string()),
+                col
+            ))
         }
     }
 
@@ -101,29 +104,24 @@ impl EventType {
     /// will.
     pub fn is_hostile(&self) -> bool {
         match self {
-            EventType::DamageShield |
-            EventType::DamageShieldMissed |
-            EventType::RangeDamage |
-            EventType::SpellDamage |
-            EventType::SpellInterrupt |
-            EventType::SpellMissed |
-            EventType::SpellPeriodicDamage |
-            EventType::SpellPeriodicMissed |
-            EventType::SpellStolen |
-            EventType::SwingDamage |
-            EventType::SwingMissed => true,
+            EventType::DamageShield
+            | EventType::DamageShieldMissed
+            | EventType::RangeDamage
+            | EventType::SpellDamage
+            | EventType::SpellInterrupt
+            | EventType::SpellMissed
+            | EventType::SpellPeriodicDamage
+            | EventType::SpellPeriodicMissed
+            | EventType::SpellStolen
+            | EventType::SwingDamage
+            | EventType::SwingMissed => true,
             _ => false
         }
     }
 }
 
 impl ParseError {
-    pub fn new(typ: ParseErrorType, col: usize) -> ParseError {
-        ParseError {
-            typ,
-            col
-        }
-    }
+    pub fn new(typ: ParseErrorType, col: usize) -> ParseError { ParseError { typ, col } }
 
     pub fn typ(&self) -> ParseErrorType { self.typ.clone() }
 
@@ -131,8 +129,8 @@ impl ParseError {
 }
 
 impl Event {
-    /// Try to parse the event struct from an event string and return it. Returns
-    /// None if the string is not properly formatted.
+    /// Try to parse the event struct from an event string and return it.
+    /// Returns None if the string is not properly formatted.
     pub fn from_str<S: AsRef<str>>(s: S) -> Result<Event, ParseError> {
         // Cut the later parts containing the advanced event information first,
         // because we have to cut by spaces afterwards, which would cut spell
@@ -143,12 +141,22 @@ impl Event {
         let head: Vec<&str> = parts[0].split_whitespace().collect();
         // Check if the Head is properly formatted.
         if head.len() != 3 {
-            error!("Event head has incorrect length. Should be three, but found {}", head.len());
-            return Err(ParseError::new(ParseErrorType::WrongHeadLength, head.len() - 1));
+            error!(
+                "Event head has incorrect length. Should be three, but found {}",
+                head.len()
+            );
+            return Err(ParseError::new(
+                ParseErrorType::WrongHeadLength,
+                head.len() - 1
+            ));
         }
 
-        // Read the time from the stamp. Have to use Naive, because the Timezone is not provided.
-        let time = match NaiveDateTime::parse_from_str(&format!("{} {} 2019", head[0], head[1]), "%m/%d %H:%M:%S%.3f %Y") {
+        // Read the time from the stamp. Have to use Naive, because the Timezone is not
+        // provided.
+        let time = match NaiveDateTime::parse_from_str(
+            &format!("{} {} 2019", head[0], head[1]),
+            "%m/%d %H:%M:%S%.3f %Y"
+        ) {
             Ok(time) => time,
             Err(err) => {
                 error!("Error while parsing the time: {}", err);
@@ -180,7 +188,9 @@ impl Event {
     pub fn typ(&self) -> EventType { self.typ }
 
     pub fn is_hostile(&self) -> bool {
-        if !self.typ.is_hostile() { return false; }
+        if !self.typ.is_hostile() {
+            return false;
+        }
 
         // No two units of the same team may be involved in a hostile event
         // XXX: Assumes, Players are friendly and npcs are hostile.

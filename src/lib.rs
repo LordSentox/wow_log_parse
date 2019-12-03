@@ -1,4 +1,5 @@
-#[macro_use] extern crate log;
+#[macro_use]
+extern crate log;
 
 pub mod encounter;
 pub mod event;
@@ -18,10 +19,10 @@ extern crate env_logger;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashSet;
     use std::fs::File;
     use std::io::Read;
     use std::sync::Once;
-    use std::collections::HashSet;
 
     static ENV_LOG_INIT: Once = Once::new();
     fn env_init() {

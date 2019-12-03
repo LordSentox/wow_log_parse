@@ -1,15 +1,15 @@
 use crate::event::*;
 use crate::unit::Unit;
 
-use std::collections::{HashSet, HashMap};
 use std::cmp::{max, min};
+use std::collections::{HashMap, HashSet};
 
 /// Represents an Encounter.
 /// An Encounter starts, when no other Encounter is active and an Event with an
 /// enemy is detected. It ends when all enemies pulled in the encounter or all
 /// players present are dead.
 pub struct Encounter {
-    events: Vec<Event>,
+    events:   Vec<Event>,
     involved: HashSet<Unit>
 }
 
@@ -29,7 +29,10 @@ impl Encounter {
                     if src.is_player() && !tgt.is_player() && !life_windows.contains_key(&tgt) {
                         life_windows.insert(tgt, (i, 0));
                     }
-                    else if tgt.is_player() && !src.is_player() && !life_windows.contains_key(&src) {
+                    else if tgt.is_player()
+                        && !src.is_player()
+                        && !life_windows.contains_key(&src)
+                    {
                         life_windows.insert(src, (i, 0));
                     }
                 }
@@ -75,22 +78,24 @@ impl Encounter {
         // Push the last encounter
         encounter_indexes.push(current_encounter);
 
-        encounter_indexes.iter().map(|(start, end)| {
-            Encounter::from_events(events[*start..*end+1].to_vec())
-        }).collect()
+        encounter_indexes
+            .iter()
+            .map(|(start, end)| Encounter::from_events(events[*start..*end + 1].to_vec()))
+            .collect()
     }
 
     pub fn from_events(events: Vec<Event>) -> Encounter {
         let mut involved = HashSet::new();
         for e in &events {
-            if let Some(src) = e.source() { involved.insert(src); };
-            if let Some(tgt) = e.target() { involved.insert(tgt); };
+            if let Some(src) = e.source() {
+                involved.insert(src);
+            };
+            if let Some(tgt) = e.target() {
+                involved.insert(tgt);
+            };
         }
 
-        Encounter {
-            events,
-            involved
-        }
+        Encounter { events, involved }
     }
 
     pub fn involved(&self) -> &HashSet<Unit> { &self.involved }
