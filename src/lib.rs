@@ -3,6 +3,7 @@ extern crate log;
 
 pub mod encounter;
 pub mod event;
+pub mod extract;
 pub mod math;
 pub mod parser;
 pub mod unit;
