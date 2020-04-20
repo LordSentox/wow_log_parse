@@ -1,5 +1,6 @@
 use crate::unit::Unit;
 use chrono::NaiveDateTime;
+use std::str::FromStr;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EventType {
@@ -41,9 +42,9 @@ pub struct Event {
     /// The time this event occured, depending on the client time used for
     /// logging. Therefore it can only be trusted to be correct *relative*
     /// to other events of the same log file.
-    time: NaiveDateTime,
+    time:   NaiveDateTime,
     /// The type of this event
-    typ: EventType,
+    typ:    EventType,
     /// The unit that is the cause or source of this event or `None` if no such
     /// unit exists, for instance with `EventType::EnvironmentalDamage`.
     source: Option<Unit>,
@@ -161,13 +162,43 @@ impl ParseError {
 }
 
 impl Event {
+    pub fn time(&self) -> NaiveDateTime { self.time }
+
+    pub fn typ(&self) -> EventType { self.typ }
+
+    pub fn is_hostile(&self) -> bool {
+        if !self.typ.is_hostile() {
+            return false;
+        }
+
+        // No two units of the same team may be involved in a hostile event
+        // XXX: Assumes, Players are friendly and npcs are hostile.
+        if let (Some(src), Some(tgt)) = (&self.source, &self.target) {
+            if src.hostile() == tgt.hostile() {
+                warn!("Detected hostile event on same side: {:?}", &self);
+            }
+        }
+
+        true
+    }
+
+    pub fn source(&self) -> Option<Unit> { self.source.clone() }
+
+    pub fn target(&self) -> Option<Unit> { self.target.clone() }
+
+    pub fn amount(&self) -> Option<u64> { self.amount }
+}
+
+impl FromStr for Event {
+    type Err = ParseError;
+
     /// Try to parse the event struct from an event string and return it.
     /// Returns None if the string is not properly formatted.
-    pub fn from_str<S: AsRef<str>>(s: S) -> Result<Event, ParseError> {
+    fn from_str(s: &str) -> Result<Event, Self::Err> {
         // Cut the later parts containing the advanced event information first,
         // because we have to cut by spaces afterwards, which would cut spell
         // names such as "Healing Stream Totem IX" into multiple parts
-        let parts: Vec<&str> = s.as_ref().split(',').collect();
+        let parts: Vec<&str> = s.split(',').collect();
 
         // Take the first element, which should contain the timestamp and the EventType.
         let head: Vec<&str> = parts[0].split_whitespace().collect();
@@ -226,30 +257,4 @@ impl Event {
             amount
         })
     }
-
-    pub fn time(&self) -> NaiveDateTime { self.time }
-
-    pub fn typ(&self) -> EventType { self.typ }
-
-    pub fn is_hostile(&self) -> bool {
-        if !self.typ.is_hostile() {
-            return false;
-        }
-
-        // No two units of the same team may be involved in a hostile event
-        // XXX: Assumes, Players are friendly and npcs are hostile.
-        if let (Some(src), Some(tgt)) = (&self.source, &self.target) {
-            if src.hostile() == tgt.hostile() {
-                warn!("Detected hostile event on same side: {:?}", &self);
-            }
-        }
-
-        true
-    }
-
-    pub fn source(&self) -> Option<Unit> { self.source.clone() }
-
-    pub fn target(&self) -> Option<Unit> { self.target.clone() }
-
-    pub fn amount(&self) -> Option<u64> { self.amount.clone() }
 }

@@ -1,7 +1,7 @@
 use crate::event::*;
 use crate::unit::Unit;
 
-use std::cmp::{max, min};
+use std::cmp::max;
 use std::collections::{HashMap, HashSet};
 
 /// Represents an Encounter.
@@ -99,4 +99,6 @@ impl Encounter {
     }
 
     pub fn involved(&self) -> &HashSet<Unit> { &self.involved }
+
+    pub fn events(&self) -> &Vec<Event> { &self.events }
 }

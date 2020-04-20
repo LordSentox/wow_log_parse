@@ -1,5 +1,6 @@
 use crate::Event;
 use std::mem;
+use std::str::FromStr;
 
 /// Parse a warcraft logs string or file into an event object.
 pub fn parse<S: AsRef<str>>(log: S) -> Vec<Event> {
