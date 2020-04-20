@@ -38,10 +38,22 @@ pub enum EventType {
 
 #[derive(Clone, Debug)]
 pub struct Event {
-    time:   NaiveDateTime,
-    typ:    EventType,
+    /// The time this event occured, depending on the client time used for
+    /// logging. Therefore it can only be trusted to be correct *relative*
+    /// to other events of the same log file.
+    time: NaiveDateTime,
+    /// The type of this event
+    typ: EventType,
+    /// The unit that is the cause or source of this event or `None` if no such
+    /// unit exists, for instance with `EventType::EnvironmentalDamage`.
     source: Option<Unit>,
-    target: Option<Unit>
+    /// The unit that is the target or receiver of this event or `None` if no
+    /// such unit exists, for instance with `EventType::SpellCastSuccess`
+    target: Option<Unit>,
+    /// Many events have an amount of for instance damage or healing. In that
+    /// case, this will be set. For events like `EventType::UnitDied` this
+    /// will be set to `None`.
+    amount: Option<u64>
 }
 
 #[derive(Clone, Debug)]
@@ -118,6 +130,26 @@ impl EventType {
             _ => false
         }
     }
+
+    /// Returns true, if the event type is a damaging event.
+    pub fn damaging(&self) -> bool {
+        match self {
+            EventType::DamageShield
+            | EventType::EnvironmentalDamage
+            | EventType::RangeDamage
+            | EventType::SpellDamage
+            | EventType::SpellPeriodicDamage
+            | EventType::SwingDamage => true,
+            _ => false
+        }
+    }
+
+    pub fn healing(&self) -> bool {
+        match self {
+            EventType::SpellHeal | EventType::SpellPeriodicHeal => true,
+            _ => false
+        }
+    }
 }
 
 impl ParseError {
@@ -174,12 +206,24 @@ impl Event {
         // Read the target this event is affecting. None is not an option here.
         let target = Unit::from_raw(parts[4], parts[5]);
 
+        let amount = if parts.len() > 10 {
+            Some(
+                parts[10]
+                    .parse()
+                    .expect("Could not parse amount. Unexpected non-integer at expected position.")
+            )
+        }
+        else {
+            None
+        };
+
         // Create the event from the parsed data
         Ok(Event {
             time,
             typ,
             source,
-            target
+            target,
+            amount
         })
     }
 
@@ -206,4 +250,6 @@ impl Event {
     pub fn source(&self) -> Option<Unit> { self.source.clone() }
 
     pub fn target(&self) -> Option<Unit> { self.target.clone() }
+
+    pub fn amount(&self) -> Option<u64> { self.amount.clone() }
 }
