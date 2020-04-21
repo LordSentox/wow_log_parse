@@ -23,6 +23,7 @@ mod tests {
     use std::collections::HashSet;
     use std::fs::File;
     use std::io::Read;
+    use std::str::FromStr;
     use std::sync::Once;
 
     static ENV_LOG_INIT: Once = Once::new();
@@ -86,5 +87,111 @@ mod tests {
         }
 
         assert_eq!(encounters.len(), 28);
+    }
+
+    #[test]
+    fn damage_dealt() {
+        env_init();
+
+        let mut file = File::open("logs/utgarde_keep.txt").expect("Unable to open file");
+        let mut log = String::new();
+        file.read_to_string(&mut log).expect("Unable to read file");
+
+        let events = parse(&log);
+
+        info!("Involved units:");
+        let mut units: HashSet<Unit> = HashSet::new();
+        for e in &events {
+            if let Some(src) = e.source() {
+                units.insert(src);
+            }
+            if let Some(tar) = e.target() {
+                units.insert(tar);
+            }
+        }
+
+        for u in units {
+            info!(
+                "[{:x}, \"{}\"] has dealt {} damage in total",
+                u.id(),
+                u.name(),
+                extract::damage_dealt(&u, events.iter())
+            );
+        }
+
+        // Check that the player damage amounts are in order
+        assert_eq!(
+            772_442,
+            extract::damage_dealt(&Unit::new(0x137e20, "Telta".into()), events.iter())
+        );
+        assert_eq!(
+            32_885,
+            extract::damage_dealt(&Unit::new(0x12dc52, "Erle".into()), events.iter())
+        );
+        assert_eq!(
+            693_396,
+            extract::damage_dealt(&Unit::new(0x160f5b, "Histera".into()), events.iter())
+        );
+        assert_eq!(
+            1_624_123,
+            extract::damage_dealt(&Unit::new(0x13b13c, "Nundo".into()), events.iter())
+        );
+        assert_eq!(
+            1_323_749,
+            extract::damage_dealt(&Unit::new(0x117351, "Ironmate".into()), events.iter())
+        );
+    }
+
+    #[test]
+    fn healing_done() {
+        env_init();
+
+        let mut file = File::open("logs/utgarde_keep.txt").expect("Unable to open file");
+        let mut log = String::new();
+        file.read_to_string(&mut log).expect("Unable to read file");
+
+        let events = parse(&log);
+
+        info!("Involved units:");
+        let mut units: HashSet<Unit> = HashSet::new();
+        for e in &events {
+            if let Some(src) = e.source() {
+                units.insert(src);
+            }
+            if let Some(tar) = e.target() {
+                units.insert(tar);
+            }
+        }
+
+        for u in units {
+            info!(
+                "[{:x}, \"{}\"] has done {} healing in total",
+                u.id(),
+                u.name(),
+                extract::healing_done(&u, events.iter())
+            );
+        }
+
+        // Check that the player damage amounts are in order
+        assert_eq!(
+            0,
+            extract::healing_done(&Unit::new(0x137e20, "Telta".into()), events.iter())
+        );
+        assert_eq!(
+            3_622_665,
+            extract::healing_done(&Unit::new(0x12dc52, "Erle".into()), events.iter())
+        );
+        assert_eq!(
+            202_990,
+            extract::healing_done(&Unit::new(0x160f5b, "Histera".into()), events.iter())
+        );
+        assert_eq!(
+            0,
+            extract::healing_done(&Unit::new(0x13b13c, "Nundo".into()), events.iter())
+        );
+        assert_eq!(
+            14_750,
+            extract::healing_done(&Unit::new(0x117351, "Ironmate".into()), events.iter())
+        );
     }
 }
