@@ -237,12 +237,11 @@ impl FromStr for Event {
         // Read the target this event is affecting. None is not an option here.
         let target = Unit::from_raw(parts[4], parts[5]);
 
-        let amount = if parts.len() > 10 {
-            Some(
-                parts[10]
-                    .parse()
-                    .expect("Could not parse amount. Unexpected non-integer at expected position.")
-            )
+        let amount = if typ.damaging() || typ.healing() {
+            match parts[10].parse() {
+                Ok(amount) => Some(amount),
+                Err(_) => return Err(ParseError::new(ParseErrorType::InvalidArg, 10))
+            }
         }
         else {
             None
