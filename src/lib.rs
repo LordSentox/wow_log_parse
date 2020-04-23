@@ -1,17 +1,21 @@
 #[macro_use]
-extern crate log;
+extern crate log as logger;
 
 pub mod encounter;
 pub mod event;
 pub mod extract;
+pub mod filter;
+pub mod filtered_events;
+pub mod log;
 pub mod math;
-pub mod parser;
 pub mod unit;
 
+pub use crate::log::*;
 pub use encounter::*;
 pub use event::*;
+pub use filter::*;
+pub use filtered_events::*;
 pub use math::*;
-pub use parser::*;
 pub use unit::*;
 
 #[cfg(test)]
@@ -44,15 +48,11 @@ mod tests {
     fn load_file() {
         env_init();
 
-        let mut file = File::open("logs/utgarde_keep.txt").expect("Unable to open file");
-        let mut log = String::new();
-        file.read_to_string(&mut log).expect("Unable to read file");
-
-        let events = parse(&log);
+        let log = Log::read_file("logs/utgarde_keep.txt").expect("Unable to read log");
 
         info!("Involved units:");
         let mut units: HashSet<Unit> = HashSet::new();
-        for e in events {
+        for e in log.events() {
             if let Some(src) = e.source() {
                 units.insert(src);
             }
@@ -70,13 +70,9 @@ mod tests {
     fn load_file_encounters() {
         env_init();
 
-        let mut file = File::open("logs/halls_of_lightning.txt").expect("Unable to open file");
-        let mut log = String::new();
-        file.read_to_string(&mut log).expect("Unable to read file");
+        let log = Log::read_file("logs/halls_of_lightning.txt").expect("Unable to read log");
 
-        let events = parse(&log);
-
-        let encounters = Encounter::all_encounters(events);
+        let encounters = Encounter::all_encounters(log.events().clone());
         info!("Number of encounters: {}", encounters.len());
 
         for e in &encounters {
@@ -93,15 +89,11 @@ mod tests {
     fn damage_dealt() {
         env_init();
 
-        let mut file = File::open("logs/utgarde_keep.txt").expect("Unable to open file");
-        let mut log = String::new();
-        file.read_to_string(&mut log).expect("Unable to read file");
-
-        let events = parse(&log);
+        let log = Log::read_file("logs/utgarde_keep.txt").expect("unable to read log");
 
         info!("Involved units:");
         let mut units: HashSet<Unit> = HashSet::new();
-        for e in &events {
+        for e in log.events() {
             if let Some(src) = e.source() {
                 units.insert(src);
             }
@@ -115,30 +107,30 @@ mod tests {
                 "[{:x}, \"{}\"] has dealt {} damage in total",
                 u.id(),
                 u.name(),
-                extract::damage_dealt(&u, events.iter())
+                extract::damage_dealt(&u, log.events().iter())
             );
         }
 
         // Check that the player damage amounts are in order
         assert_eq!(
             772_442,
-            extract::damage_dealt(&Unit::new(0x137e20, "Telta".into()), events.iter())
+            extract::damage_dealt(&Unit::new(0x137e20, "Telta".into()), log.events().iter())
         );
         assert_eq!(
             32_885,
-            extract::damage_dealt(&Unit::new(0x12dc52, "Erle".into()), events.iter())
+            extract::damage_dealt(&Unit::new(0x12dc52, "Erle".into()), log.events().iter())
         );
         assert_eq!(
             693_396,
-            extract::damage_dealt(&Unit::new(0x160f5b, "Histera".into()), events.iter())
+            extract::damage_dealt(&Unit::new(0x160f5b, "Histera".into()), log.events().iter())
         );
         assert_eq!(
             1_624_123,
-            extract::damage_dealt(&Unit::new(0x13b13c, "Nundo".into()), events.iter())
+            extract::damage_dealt(&Unit::new(0x13b13c, "Nundo".into()), log.events().iter())
         );
         assert_eq!(
             1_323_749,
-            extract::damage_dealt(&Unit::new(0x117351, "Ironmate".into()), events.iter())
+            extract::damage_dealt(&Unit::new(0x117351, "Ironmate".into()), log.events().iter())
         );
     }
 
@@ -146,15 +138,11 @@ mod tests {
     fn healing_done() {
         env_init();
 
-        let mut file = File::open("logs/utgarde_keep.txt").expect("Unable to open file");
-        let mut log = String::new();
-        file.read_to_string(&mut log).expect("Unable to read file");
-
-        let events = parse(&log);
+        let log = Log::read_file("logs/utgarde_keep.txt").expect("Unable to read log");
 
         info!("Involved units:");
         let mut units: HashSet<Unit> = HashSet::new();
-        for e in &events {
+        for e in log.events() {
             if let Some(src) = e.source() {
                 units.insert(src);
             }
@@ -168,30 +156,30 @@ mod tests {
                 "[{:x}, \"{}\"] has done {} healing in total",
                 u.id(),
                 u.name(),
-                extract::healing_done(&u, events.iter())
+                extract::healing_done(&u, log.events().iter())
             );
         }
 
         // Check that the player damage amounts are in order
         assert_eq!(
             0,
-            extract::healing_done(&Unit::new(0x137e20, "Telta".into()), events.iter())
+            extract::healing_done(&Unit::new(0x137e20, "Telta".into()), log.events().iter())
         );
         assert_eq!(
             3_622_665,
-            extract::healing_done(&Unit::new(0x12dc52, "Erle".into()), events.iter())
+            extract::healing_done(&Unit::new(0x12dc52, "Erle".into()), log.events().iter())
         );
         assert_eq!(
             202_990,
-            extract::healing_done(&Unit::new(0x160f5b, "Histera".into()), events.iter())
+            extract::healing_done(&Unit::new(0x160f5b, "Histera".into()), log.events().iter())
         );
         assert_eq!(
             0,
-            extract::healing_done(&Unit::new(0x13b13c, "Nundo".into()), events.iter())
+            extract::healing_done(&Unit::new(0x13b13c, "Nundo".into()), log.events().iter())
         );
         assert_eq!(
             14_750,
-            extract::healing_done(&Unit::new(0x117351, "Ironmate".into()), events.iter())
+            extract::healing_done(&Unit::new(0x117351, "Ironmate".into()), log.events().iter())
         );
     }
 }

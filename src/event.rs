@@ -1,3 +1,4 @@
+use crate::log::{ParseError, ParseErrorType};
 use crate::unit::Unit;
 use chrono::NaiveDateTime;
 use std::str::FromStr;
@@ -55,20 +56,6 @@ pub struct Event {
     /// case, this will be set. For events like `EventType::UnitDied` this
     /// will be set to `None`.
     amount: Option<u64>
-}
-
-#[derive(Clone, Debug)]
-pub enum ParseErrorType {
-    WrongHeadLength,
-    WrongTimeFormat,
-    InvalidArg,
-    UnknownEventType(String)
-}
-
-#[derive(Clone, Debug)]
-pub struct ParseError {
-    typ: ParseErrorType,
-    col: usize
 }
 
 impl EventType {
@@ -151,14 +138,6 @@ impl EventType {
             _ => false
         }
     }
-}
-
-impl ParseError {
-    pub fn new(typ: ParseErrorType, col: usize) -> ParseError { ParseError { typ, col } }
-
-    pub fn typ(&self) -> ParseErrorType { self.typ.clone() }
-
-    pub fn col(&self) -> usize { self.col }
 }
 
 impl Event {

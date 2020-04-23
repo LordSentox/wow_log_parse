@@ -5,6 +5,7 @@ authors = ["Arne Dussin <arne.dussin@live.de>"]
 edition = "2018"
 
 [dependencies]
+bitvec = "*"
 chrono = "*"
 log = "*"
 env_logger = "*"
